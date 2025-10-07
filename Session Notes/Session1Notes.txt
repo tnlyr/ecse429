@@ -1,0 +1,142 @@
+CHARTER
+-----------------------------------------------
+Identify capabilities and areas of potential instability of the “rest
+api todo list manager”.
+Identify documented and undocumented “rest api todo list manager”
+capabilities.
+For each capability create a script or small program to demonstrate
+the capability.
+Exercise each capability identified with data typical to the intended
+use of the application.
+
+Build
+-----------------------------------------------
+runTodoManagerRestAPI-1.5.5.jar
+
+Testing Environment
+-----------------------------------------------
+OS: Windows 11, 24H2
+
+Files
+-----------------------------------------------
+Session1Notes.txt
+
+START
+-----------------------------------------------
+September 27th, 2025 @ 19:30
+
+TESTERS
+--------------------
+Lounes Azzoun, lounes.azzoun@mail.mcgill.ca, 261181741
+
+DURATION
+-----------------------------------------------
+45 minutes
+
+NOTES
+-----------------------------------------------
+
+* Downloaded the jar file from the Github repository
+
+OPTIONS /todos → UNDOCUMENTED → Expected: list of options → Observed: list of options → DIFFERENCE: NO
+
+GET /todos → DOCUMENTED → Expected: all todos → Observed: all todos → DIFFERENCE: NO
+
+GET /todos/ → UNDOCUMENTED → Expected: not allowed → Observed: 404 error → DIFFERENCE: NO
+
+GET /todos/1 → DOCUMENTED → Expected: todo with ID 1 → Observed: todo with ID 1 → DIFFERENCE: NO
+
+GET /todos/3 → UNDOCUMENTED → Expected: not allowed → Observed: 404 error → DIFFERENCE: NO
+
+GET /todos?title=scan paperwork → DOCUMENTED → Expected: todo by title → Observed: todo by title → DIFFERENCE: NO
+
+GET /todos?description=test description → DOCUMENTED → Expected: todo by description → Observed: todo by description → DIFFERENCE: NO
+
+GET /todos?description=test → UNDOCUMENTED → Expected: match partial → Observed: no todo → DIFFERENCE: YES
+
+GET /todos (Accept: JSON) → DOCUMENTED → Expected: todos in JSON → Observed: todos in JSON → DIFFERENCE: NO
+
+GET /todos (Accept: XML) → DOCUMENTED → Expected: todos in XML → Observed: todos in XML → DIFFERENCE: NO
+
+HEAD /todos (Accept: JSON) → DOCUMENTED → Expected: headers in JSON → Observed: headers in JSON → DIFFERENCE: NO
+
+HEAD /todos (Accept: XML) → DOCUMENTED → Expected: headers in XML → Observed: headers in XML → DIFFERENCE: NO
+
+POST /todos (empty body) → DOCUMENTED → Expected: fail (missing title) → Observed: error “title mandatory”, ID still increments → DIFFERENCE: YES
+
+POST /todos (with id specified) → DOCUMENTED → Expected: fail → Observed: failed → DIFFERENCE: NO
+
+POST /todos (with title & description) → DOCUMENTED → Expected: create todo → Observed: created → DIFFERENCE: NO
+
+OPTIONS /todos/:id → UNDOCUMENTED → Expected: list of options → Observed: list of options → DIFFERENCE: NO
+
+GET /todos/1 → DOCUMENTED → Expected: todo with id 1 → Observed: todo with id 1 → Difference: NO
+
+GET /todos/100 → DOCUMENTED → Expected: fail (nonexistent) → Observed: 404 error → DIFFERENCE: NO
+
+HEAD /todos/2 (JSON) → DOCUMENTED → Expected: headers in JSON → Observed: headers in JSON → DIFFERENCE: NO
+
+HEAD /todos/2 (XML) → DOCUMENTED → Expected: headers in XML → Observed: headers in XML → DIFFERENCE: NO
+
+POST /todos/1 (modify existing) → DOCUMENTED → Expected: modify todo → Observed: modified todo (but really should use PATCH) → DIFFERENCE: NO
+
+POST /todos/100 (nonexistent) → DOCUMENTED → Expected: fail → Observed: 404 error → DIFFERENCE: NO
+
+PUT /todos/1 (partial update) → DOCUMENTED → Expected: update → Observed: error “title mandatory” → DIFFERENCE: YES
+
+PUT /todos/100 → DOCUMENTED → Expected: fail (nonexistent) → Observed: 404 error → DIFFERENCE: NO
+
+DELETE /todos/1 → DOCUMENTED → Expected: delete → Observed: deleted (200, no confirmation) → DIFFERENCE: NO
+
+GET /todos/1 after delete → DOCUMENTED → Expected: fail → Observed: 404 error → DIFFERENCE: NO
+
+DELETE /todos/100 → DOCUMENTED → Expected: fail → Observed: 404 error → DIFFERENCE: NO
+
+
+SUMMARY OF SESSION FINDINGS
+-----------------------------------------------
+OPTIONS:
+	Successfully validated documented options for both /todos and
+	/todos/:id. The provided options appear to be exhaustive.
+GET:
+	Todos were successfully retrieved using ID, title, description, and doneStatus.	
+	Filtering by description only works with an exact match; partial keywords are not supported (suggesting inclusion-based filtering may be missing).
+	Data retrieval worked correctly in both JSON and XML formats.
+HEAD:
+	Headers were returned as expected in both JSON and XML for all tested requests.
+POST:
+	The API handled valid input properly, and rejected invalid input such as missing the mandatory title field (returned a 400 error).
+	Creation of new todos worked when valid fields were supplied.
+	Attempts to post with an existing ID did not succeed, as expected.
+	Requests with nonexistent IDs correctly produced 404 errors..
+PUT:
+	Sending a partial payload replaced the entire todo, with unspecified fields reset to their default values. This reset behavior is not mentioned in the documentation.
+	Attempts to update with nonexistent IDs failed appropriately.
+DELETE:
+	Deletion of todos by ID worked correctly.
+	Follow-up requests to retrieve deleted todos failed as expected.
+
+
+SUMMARY OF CONCERNS
+-----------------------------------------------
+- Description Filtering: 
+	Partial matches in the description field are not supported. Adding substring or inclusion-based search would make the API more user-friendly.
+- PUT/POST Handling: 
+	While existing and nonexistent IDs are handled correctly, the undocumented behavior of PUT (resetting unspecified fields to defaults) could cause unintended data loss. This should either be documented clearly or modified.
+- Empty Todo Creation: 
+	Attempting to post an empty todo returns the error "title: field mandatory". If the title were not required, empty todos would be created, which would likely be a bug.
+- ID Incrementation Bug: 
+	Even when a POST fails, the internal ID counter still increments by two instead of one. This can lead to gaps in IDs and potential integrity issues.
+- Security Risk: 
+	Since the API lacks authentication, critical actions (like shutting down the app) could be triggered by anyone using a simple GET request.
+
+
+FUTURE TESTING IDEAS
+-----------------------------------------------
+Try more edge cases for creating and deleting todos
+Check response headers in detail
+Investigate handling of non-existent todo IDs
+Look deeper into linking and unlinking tasks with todos
+Evaluate OPTIONS behavior across endpoints
+
+----------------- Ending Testing ----------------------------------------
