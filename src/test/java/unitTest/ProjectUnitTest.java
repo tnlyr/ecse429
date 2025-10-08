@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * BDD-style Project API tests (performance/csv logging removed).
+ * Project API tests
  */
 @TestMethodOrder(Random.class)
 public class ProjectUnitTest {
