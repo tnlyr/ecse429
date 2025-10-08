@@ -1,0 +1,153 @@
+CHARTER
+-----------------------------------------------
+Identify capabilities and areas of potential instability of the “rest
+api todo list manager”.
+Identify documented and undocumented “rest api todo list manager”
+capabilities.
+For each capability create a script or small program to demonstrate
+the capability.
+Exercise each capability identified with data typical to the intended
+use of the application.
+
+Build
+-----------------------------------------------
+runTodoManagerRestAPI-1.5.5.jar
+
+Testing Environment
+-----------------------------------------------
+OS: Windows 11, 24H2
+
+Files
+-----------------------------------------------
+Session2Notes.txt
+
+START
+-----------------------------------------------
+September 28th, 2025 @ 21:00
+
+TESTERS
+--------------------
+Ahmed Mossa, ahmed.mossa@mail.mcgill.ca, 261001739
+
+DURATION
+-----------------------------------------------
+45 minutes
+
+NOTES
+-----------------------------------------------
+
+* Downloaded the jar file from the Github repository
+
+OPTIONS /projects → UNDOCUMENTED → Expected: list of options → Observed: list of options → DIFFERENCE: NO
+
+GET /projects → DOCUMENTED → Expected: all projects → Observed: all objects → DIFFERENCE: NO
+
+GET /projects/ → UNDOCUMENTED → Expected: not allowed → Observed: 404 error → DIFFERENCE: NO
+
+GET /projects/1 → DOCUMENTED → Expected: project with ID 1 → Observed: project with ID 1 → DIFFERENCE: NO
+
+GET /projects/3 → UNDOCUMENTED → Expected: not allowed → Observed: 404 error → DIFFERENCE: NO
+
+GET /projects?title=Office Work → DOCUMENTED → Expected: filter by title → Observed: filtered correctly → DIFFERENCE: NO
+
+GET /projects?active=false&completed=false → DOCUMENTED → Expected: filter by active/completed flags → Observed: filtered correctly → DIFFERENCE: NO
+
+GET /projects?description=Beginner course → DOCUMENTED → Expected: project by description → Observed: matched project → DIFFERENCE: NO
+
+GET /projects?description=course → UNDOCUMENTED → Expected: match partial → Observed: no match → DIFFERENCE: YES
+
+GET /projects (Accept: JSON) → DOCUMENTED → Expected: JSON list → Observed: JSON list → DIFFERENCE: NO
+
+GET /projects (Accept: XML) → DOCUMENTED → Expected: XML list → Observed: XML list → DIFFERENCE: NO
+
+HEAD /projects (JSON) → DOCUMENTED → Expected: headers in JSON → Observed: headers in JSON → DIFFERENCE: NO
+
+HEAD /projects (XML) → DOCUMENTED → Expected: headers in XML → Observed: headers in XML → DIFFERENCE: NO
+
+POST /projects (empty body) → DOCUMENTED → Expected: reject → Observed: created empty project → DIFFERENCE: YES
+
+POST /projects (with ID) → DOCUMENTED → Expected: fail → Observed: failed → DIFFERENCE: NO
+
+POST /projects (title + description, JSON) → DOCUMENTED → Expected: create project → Observed: created → DIFFERENCE: NO
+
+POST /projects (title + description, XML) → DOCUMENTED → Expected: create project → Observed: created → DIFFERENCE: YES
+
+POST /projects (completed=true) → DOCUMENTED → Expected: create completed project → Observed: created completed project → DIFFERENCE: YES
+
+POST /projects (completed + active) → DOCUMENTED → Expected: create project with both flags → Observed: created project with both flags → DIFFERENCE: YES
+
+OPTIONS /projects/:id → UNDOCUMENTED → Expected: list of options → Observed: list of options → DIFFERENCE: NO
+
+GET /projects/1 → DOCUMENTED → Expected: project with ID 1 → Observed: got project → DIFFERENCE: NO
+
+GET /projects/7 → DOCUMENTED → Expected: fail (nonexistent) → Observed: 404 error → DIFFERENCE: NO
+
+HEAD /projects/6 (JSON) → DOCUMENTED → Expected: headers in JSON → Observed: headers in JSON → DIFFERENCE: NO
+
+HEAD /projects/6 (XML) → DOCUMENTED → Expected: headers in XML → Observed: headers in XML → DIFFERENCE: NO
+
+POST /projects/6 (modify existing) → DOCUMENTED → Expected: modify → Observed: modified → DIFFERENCE: NO
+
+POST /projects/7 (nonexistent) → DOCUMENTED → Expected: fail → Observed: 404 error → DIFFERENCE: NO
+
+PUT /projects/6 (partial update) → DOCUMENTED → Expected: update → Observed: error “title mandatory” → DIFFERENCE: YES
+
+PUT /projects/7 (nonexistent) → DOCUMENTED → Expected: fail → Observed: 404 error → DIFFERENCE: NO
+
+DELETE /projects/6 → DOCUMENTED → Expected: delete project → Observed: deleted (200, no confirmation) → DIFFERENCE: NO
+
+GET /projects/6 after delete → DOCUMENTED → Expected: fail → Observed: 404 error → DIFFERENCE: NO
+
+DELETE /projects/7 (nonexistent) → DOCUMENTED → Expected: fail → Observed: fail → DIFFERENCE: NO
+
+
+SUMMARY OF SESSION FINDINGS
+-----------------------------------------------
+OPTIONS:
+	Both /projects and /projects/:id returned the expected set of supported methods. The options list appeared complete.
+GET:
+	Successfully retrieved projects by ID, title, active status, and completed status.
+	Filtering by description required an exact match; partial keyword filtering was unsupported.
+	Project data was retrieved successfully in both JSON and XML formats.
+HEAD:
+	Header responses matched expectations in both JSON and XML for all tested endpoints.
+POST:
+	Submitting an empty project succeeded, raising questions about whether this behavior is appropriate.
+	Attempts to create a project while specifying an ID failed, as expected.
+	Projects with duplicate titles and descriptions could be created using both JSON and XML, suggesting no uniqueness validation.
+	The API allowed creating projects marked as both completed and active, which may represent a logical conflict.
+PUT:
+	Replacing a project with partial fields caused unspecified fields to reset to defaults, which was not documented.
+	Attempts to update nonexistent project IDs failed correctly with a 404.
+DELETE:
+	Deleting projects by ID worked as expected.
+	Attempts to retrieve deleted projects returned the correct 404 errors.
+
+SUMMARY OF CONCERNS
+-----------------------------------------------
+- Description Filtering: 
+	Only exact description matches are supported. Inclusion-based filtering could provide a more user-friendly search experience.
+- Duplicate Projects: 
+	The system currently allows identical projects with the same title and description. Clarification is needed on whether duplicates should be restricted.
+- Conflicting Status Flags:
+	The ability to create projects that are simultaneously active and completed may contradict business logic and requires further review.
+- PUT/POST Behavior: 
+	Although existing and nonexistent IDs are handled properly, the undocumented behavior of PUT (resetting unspecified fields to defaults) poses a risk of accidental data loss. This should be either clarified in documentation or adjusted in implementation.
+- Empty Project Creation: 
+	The system accepts empty projects. Whether this should be allowed is unclear, and likely problematic.
+
+FUTURE TESTING IDEAS
+-----------------------------------------------
+- Inclusion-Based Filtering: 
+	Create additional tests for partial description matching to confirm whether it could be supported in future.
+- Duplicate Prevention: 
+	Develop test cases around project uniqueness, ensuring duplicates are either prevented or clearly documented.
+- Status Logic: 
+	Investigate how status flags interact, including unusual states such as “completed and active” simultaneously.
+- PUT/POST Validation: 
+	Extend testing of PUT and POST to document the reset behavior of missing fields, and evaluate PATCH as a more suitable option for partial updates.
+- Empty Project Handling: 
+	Design test cases to decide whether empty projects are useful or should be disallowed entirely.
+
+----------------- Ending Testing ----------------------------------------
+
