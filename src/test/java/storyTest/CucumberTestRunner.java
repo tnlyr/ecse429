@@ -15,7 +15,7 @@ import static io.cucumber.junit.platform.engine.Constants.*;
 @SelectClasspathResource("features")
 @ConfigurationParameter(key = GLUE_PROPERTY_NAME, value = "storyTest")
 @ConfigurationParameter(key = PLUGIN_PROPERTY_NAME, value = "pretty, html:target/cucumber-report.html")
-public class TestRunner {
+public class CucumberTestRunner {
     public static void main(String[] args) throws Exception {
         final long seed = 12345L;                 // deterministic shuffle
         final Random rng = new Random(seed);
