@@ -1,39 +1,39 @@
-Feature: Retrieve Specific Project
-  A user should be able to obtain details of a single project by either its ID or title.
+Feature: Retrieve a Specific Project
+  As a user, I want to access a particular project by ID or title so that I can review its details.
 
   Background:
-    Given the project API service is available
-    And the following projects are already stored:
-      | id | title        | active |
-      | 1  | Health App   | true   |
+    Given the service is running
+    And the following projects exist in the system:
+      | id | title       | active |
+      | 1  | Office Work | false  |
 
-  # --- Lookup by ID ---
-  Scenario Outline: Retrieve a project using its unique identifier
-    When a GET request is sent to "projects/<id>"
-    Then the server responds with status code 200
-    And the response contains project ID "<id>" and title "<title>"
-
-    Examples:
-      | id | title      |
-      | 1  | Health App |
-
-  # --- Lookup by Title ---
-  Scenario Outline: Retrieve a project by searching with title
-    When a GET request is sent to "projects" with query parameter title="<title>"
-    Then the server responds with status code 200
-    And the response contains project ID "<id>" and title "<title>"
+  # Normal Flow
+  Scenario Outline: Retrieve a project by its ID
+    When we send a GET request to "projects/<id>"
+    Then the project response code should be 200
+    And the response must include a project with ID "<id>" and title "<title>"
 
     Examples:
-      | id | title      |
-      | 1  | Health App |
+      | id | title       |
+      | 1  | Office Work |
 
-  # --- Invalid ID ---
-  Scenario Outline: Try retrieving a project that does not exist
-    When a GET request is sent to "projects/<invalid_id>"
-    Then the server responds with status code 404
-    And the response message should include "[Could not find an instance with projects/<invalid_id>]"
+  # Alternate Flow
+  Scenario Outline: Retrieve a project by its title
+    When we send a GET request to "projects" with title parameter "<title>" applied
+    Then the project response code should be 200
+    And the response must include a project with ID "<id>" and title "<title>"
+
+    Examples:
+      | id | title       |
+      | 1  | Office Work |
+
+  # Error Flow
+  Scenario Outline: Attempt to retrieve a project with an invalid ID
+    When I send a GET request to project endpoint "projects/<invalid_id>"
+    Then the project response code should be 404
+    And the response must include the error message: "Could not find an instance with projects/<invalid_id>"
 
     Examples:
       | invalid_id |
-      | 404        |
-      | wrongID    |
+      | 9999       |
+      | abc123     |

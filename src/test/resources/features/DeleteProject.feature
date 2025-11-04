@@ -1,35 +1,36 @@
-Feature: Delete Project
-  Users must be able to permanently remove projects that are no longer needed.
+Feature: Remove an Existing Project
+  As a user, I want to delete a project by its ID so that it no longer appears in listings.
 
   Background:
-    Given the project API service is available
-    And the following projects are already stored:
-      | id | title         | active |
-      | 1  | Demo Project  | false  |
+    Given the service is running
+    And the following projects exist in the system:
+      | id | title       | active |
+      | 1  | Office Work | false  |
 
-  # --- Standard Deletion ---
-  Scenario Outline: Remove a project using its identifier
-    When a DELETE request is sent to "projects/<ID>"
-    Then the server responds with status code 200
-    And the project located at "projects/<ID>" should be gone
+  # Normal Flow
+  Scenario Outline: Delete a project by ID
+    When I delete the project at "projects/<ID>"
+    Then the project response code should be 200
+    And the project at "projects/<ID>" should no longer exist
 
     Examples:
       | ID |
       | 1  |
 
-  # --- Create and Delete ---
-  Scenario Outline: Create a temporary project and remove it
-    When a POST request is sent to "projects" with title "Temporary" and active status "true", then that project is deleted
-    Then the server responds with status code 200
-    And the project located at "projects/<ID>" should be gone
+  # Alternate Flow
+  Scenario Outline: Create a project and then delete it
+    When I create a project via POST to "projects" with title "title" and active "false", then delete it
+    And I send a DELETE request to project endpoint "projects/<ID>"
+    Then the project response code should be 404
+    And the project at "projects/<ID>" should no longer exist
 
     Examples:
-      | ID | title          | active |
-      | 5  | Temporary Task | true   |
-      | 6  | Archive File   | false  |
+      | ID | title     | active |
+      | 5  | Project X | true   |
+      | 6  | Project Y | false  |
 
-  # --- Invalid Deletion ---
-  Scenario: Attempt to delete a project with an invalid ID
-    When a DELETE request is sent to "projects/-1"
-    Then the server responds with status code 404
-    And the response message should include "[Could not find any instances with projects/-1]"
+  # Error Flow
+  Scenario: Delete a project with an invalid ID
+    When I delete the project at "projects/-1"
+    Then the project response code should be 404
+    And the response must include the error message: "Could not find any instances with projects/-1"

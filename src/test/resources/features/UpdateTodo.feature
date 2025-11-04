@@ -1,43 +1,42 @@
-Feature: Update Existing Todo Item
-  As a user, I want to edit an existing todo entry
-  So that I can update its title or description when needed
+Feature: Update Existing Todo
+  As a user, I want to modify details of an existing todo task so that I can keep my todo list up to date.
 
   Background:
-    Given the todo service is active
-    And the following todo items exist in the system:
+    Given the service is running
+    And the following todos exist in the system:
       | id | title          | doneStatus | description |
-      | 1  | scan paperwork | false      |              |
-      | 2  | file paperwork | false      |              |
+      | 1  | scan paperwork | false      |             |
+      | 2  | file paperwork | false      |             |
 
   # Normal Flow
-  Scenario Outline: Successfully update a todo item’s title and description using PUT
-    When I make a PUT request to "todos/<ID>" with title "<title>" and description "<description>"
-    Then the response status code should be 200
-    And the response should include a todo item with title "<title>" and description "<description>"
+  Scenario Outline: PUT Update a todo task's title and description
+    When I send PUT request to "todos/<ID>" with title: "<title>" and description: "<description>"
+    Then we get an HTTP response 200
+    And the response should have a todo task with title: "<title>" and description: "<description>"
 
     Examples:
-      | ID | title   | description               |
-      | 1  | Todo 1  | Updated description 1     |
-      | 2  | Todo 2  | Updated description 2     |
+      | ID | title  | description               |
+      | 1  | Todo 1 | New description of Todo 1 |
+      | 2  | Todo 2 | New description of Todo 2 |
 
   # Alternate Flow
-  Scenario Outline: Successfully update a todo item’s title and description using POST
-    When I make a POST request to "todos/<ID>" with title "<title>" and description "<description>"
-    Then the response status code should be 200
-    And the response should include a todo item with title "<title>" and description "<description>"
+  Scenario Outline: POST Update a todo task's title and description
+    When I send a POST request to "todos/<ID>" with title: "<title>" and description: "<description>"
+    Then we get an HTTP response 200
+    And the response should have a todo task with title: "<title>" and description: "<description>"
 
     Examples:
-      | ID | title        | description                   |
-      | 1  | Todo 1 POST  | Updated description for POST 1 |
-      | 2  | Todo 2 POST  | Updated description for POST 2 |
+      | ID | title       | description                    |
+      | 1  | Todo 1 POST | New description of Todo 1 POST |
+      | 2  | Todo 2 POST | New description of Todo 2 POST |
 
   # Error Flow
-  Scenario Outline: Attempt to update a todo item with an invalid ID using PUT
-    When I make a PUT request to "todos/-1" with title "<title>" and description "<description>"
-    Then the response status code should be 404
-    And the response should include the error message "[Invalid resource identifier: -1 for todo]"
+  Scenario Outline: PUT Attempt to update a todo task with an invalid ID
+    When I send PUT request to "todos/-1" with title: "<title>" and description: "<description>"
+    Then we get an HTTP response 404
+    And the response should display the error message "[Invalid GUID for -1 entity todo]"
 
     Examples:
-      | title         | description                  |
-      | Todo 1 Error  | Updated description Error 1   |
-      | Todo 2 Error  | Updated description Error 2   |
+      | title        | description                      |
+      | Todo 1 Error | New description of Todo 1 Error  |
+      | Todo 2 Error | New description of Todo 2 Error  |

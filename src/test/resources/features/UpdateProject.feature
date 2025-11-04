@@ -1,38 +1,38 @@
-Feature: Update Project Details
-  A user should be able to modify an existing project's title or description.
+Feature: Modify an Existing Project
+  As a user, I want to update an existing project so that I can adjust its details.
 
   Background:
-    Given the project API service is available
-    And the following projects are already stored:
-      | id | title          | description |
-      | 1  | Draft Proposal |             |
+    Given the service is running
+    And the following projects exist in the system:
+      | id | title       | description |
+      | 1  | Office Work |             |
 
-  # --- PUT Update ---
-  Scenario Outline: Modify title and description using PUT
-    When a PUT request is sent to "projects/<ID>" with title "<title>" and description "<description>"
-    Then the server responds with status code 200
-    And the updated project should have title "<title>" and description "<description>"
-
-    Examples:
-      | ID | title             | description        |
-      | 1  | Draft Revision    | Updated via PUT    |
-
-  # --- POST Update ---
-  Scenario Outline: Modify title and description using POST
-    When a POST request is sent to "projects/<ID>" with title "<title>" and description "<description>"
-    Then the server responds with status code 200
-    And the updated project should have title "<title>" and description "<description>"
+  # Normal Flow
+  Scenario Outline: Successfully update a project's title and description using PUT
+    When I update the project at "projects/<ID>" via PUT with title "<title>" and description "<description>"
+    Then the project response code should be 200
+    And the response must show a project titled "<title>" with description "<description>"
 
     Examples:
-      | ID | title               | description        |
-      | 1  | Draft Revision v2   | Updated via POST   |
+      | ID | title     | description       |
+      | 1  | Project 1 | description - PUT |
 
-  # --- Invalid Update ---
-  Scenario Outline: Attempt to update a project with a bad ID
-    When a PUT request is sent to "projects/-1" with title "<title>" and description "<description>"
-    Then the server responds with status code 404
-    And the response message should include "Invalid GUID for -1 entity project"
+  # Alternate Flow
+  Scenario Outline: Successfully update a project's title and description using POST
+    When I update the project at "projects/<ID>" via POST with title "<title>" and description "<description>"
+    Then the project response code should be 200
+    And the response must show a project titled "<title>" with description "<description>"
 
     Examples:
-      | ID | title        | description        |
-      | 1  | Broken Edit  | Invalid reference  |
+      | ID | title            | description        |
+      | 1  | Project 1 - Post | description - POST |
+
+  # Error Flow
+  Scenario Outline: Attempt to update with an invalid ID using PUT
+    When I update the project at "projects/-1" via PUT with title "<title>" and description "<description>"
+    Then the project response code should be 404
+    And the response must include the error message: "Invalid GUID for -1 entity project"
+
+    Examples:
+      | ID | title             | description         |
+      | 1  | Project 1 - Error | description - Error |

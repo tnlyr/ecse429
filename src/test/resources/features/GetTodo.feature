@@ -1,5 +1,5 @@
-Feature: Get a Specific Todo
-  As a user, I want to retrieve a specific todo task so that I can view its details.
+Feature: Retrieve a Specific Todo
+  As a user, I want to get a specific todo task so that I can retrieve its details.
 
   Background:
     Given the service is running
@@ -9,10 +9,10 @@ Feature: Get a Specific Todo
       | 2  | file paperwork | false      |             |
 
   # Normal Flow
-  Scenario Outline: Get a Todo task using its ID
-    When I send a GET request to "todos/<id>"
-    Then I should receive a response status code of 200
-    And the response should contain a todo task with ID "<id>" and title "<title>"
+  Scenario Outline: Retrieve a Todo task using its ID
+    When I send GET request to "todos/<id>"
+    Then we get an HTTP response 200
+    And the response should have a todo task ID "<id>" with title "<title>"
 
     Examples:
       | id | title          |
@@ -20,10 +20,10 @@ Feature: Get a Specific Todo
       | 2  | file paperwork |
 
   # Alternate Flow
-  Scenario Outline: Get a Todo task using its title
-    When I send a GET request to "todos" with title parameter "<title>"
-    Then I should receive a response status code of 200
-    And the response should contain a todo task with ID "<id>" and title "<title>"
+  Scenario Outline: Retrieve a Todo task using its title
+    When I send GET request to "todos" with title parameter "<title>"
+    Then we get an HTTP response 200
+    And the response should have a todo task ID "<id>" with title "<title>"
 
     Examples:
       | id | title           |
@@ -31,10 +31,10 @@ Feature: Get a Specific Todo
       | 2  | file paperwork  |
 
   # Error Flow
-  Scenario Outline: Get a Todo task with invalid ID
-    When I send a GET request to "todos/<invalid_id>"
-    Then I should receive a response status code of 404
-    And the response should contain the error message "[Could not find an instance with todos/<invalid_id>]"
+  Scenario Outline: Attempt to retrieve a Todo task using an invalid ID
+    When I send GET request to "todos/<invalid_id>"
+    Then we get an HTTP response 404
+    And the response should display the error message "[Could not find an instance with todos/<invalid_id>]"
 
     Examples:
       | invalid_id |
