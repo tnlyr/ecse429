@@ -1,4 +1,4 @@
-Feature: Remove an Existing Project
+Feature: Delete an Existing Project
   As a user, I want to delete a project by its ID so that it no longer appears in listings.
 
   Background:

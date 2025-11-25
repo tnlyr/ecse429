@@ -1,4 +1,4 @@
-Feature: Delete Existing Todo
+Feature: Delete an Existing Todo
   As a user, I want to remove a todo so it no longer appears in the list
 
   Background:

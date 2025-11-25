@@ -23,4 +23,4 @@ Ahmed Mossa - 261001739
 
 [Step Definition Tests Video](https://www.youtube.com/watch?v=NnnDGqZvpy0)
 
-[Report PDF File]()
+[Report PDF File](https://github.com/tnlyr/ecse429/blob/main/Report_A2.pdf)

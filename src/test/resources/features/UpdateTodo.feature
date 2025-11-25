@@ -1,4 +1,4 @@
-Feature: Update Existing Todo
+Feature: Modify an Existing Todo
   As a user, I want to modify details of an existing todo task so that I can keep my todo list up to date.
 
   Background:
