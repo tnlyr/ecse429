@@ -509,29 +509,122 @@ public class TodoUnitTest {
 
     @Test
     public void shouldCreateMultipleTodosAndCleanup() {
-        for (int i = 0; i < 3; i++) {
-            JSONObject todo = newUniqueTodo();
-            Response response = given().body(todo.toString()).when().post("/todos");
-            assertEquals(201, response.getStatusCode());
+        int[] objectCounts = {1, 200, 400, 600, 800, 1000, 1200};
+        String csvFile = "src/test/resources/todo_performance_results.csv";
 
-            int createdId = response.jsonPath().getInt("id");
-            Response del = given().pathParam("id", createdId).when().delete("/todos/{id}");
-            assertEquals(200, del.getStatusCode());
+        for (int numObjects : objectCounts) {
+
+            // ---- initial metrics ----
+            long startTime = System.currentTimeMillis();
+            long initialSampleEnd = startTime + 1000; // 1-second sampling window before operation
+
+            double initialCpuUsage = PerformanceUtils.sampleCpuLoad(startTime, initialSampleEnd);
+            long initialMemoryUsage = PerformanceUtils.getCurrentMemoryUsage();
+
+            // ---- create & delete numObjects todos ----
+            for (int i = 0; i < numObjects; i++) {
+                JSONObject todo = newUniqueTodo();
+
+                Response response = given()
+                        .body(todo.toString())
+                        .when()
+                        .post("/todos");
+                assertEquals(201, response.getStatusCode());
+
+                int createdId = response.jsonPath().getInt("id");
+
+                Response del = given()
+                        .pathParam("id", createdId)
+                        .when()
+                        .delete("/todos/{id}");
+                assertEquals(200, del.getStatusCode());
+            }
+
+            // ---- final metrics ----
+            long operationEndTime = System.currentTimeMillis();
+            long finalSamplingEndTime = operationEndTime + 1000; // 1-second sampling after operation
+
+            double finalCpuUsage = PerformanceUtils.sampleCpuLoad(operationEndTime, finalSamplingEndTime);
+            long finalMemoryUsage = PerformanceUtils.getCurrentMemoryUsage();
+
+            long duration = operationEndTime - startTime;
+            double cpuDelta = Math.max(0, finalCpuUsage - initialCpuUsage);
+            long memoryDelta = Math.max(0, finalMemoryUsage - initialMemoryUsage);
+
+            // ---- log to CSV ----
+            PerformanceUtils.logToCsv(
+                    csvFile,
+                    "createMultipleTodos",
+                    numObjects,
+                    duration,
+                    cpuDelta,
+                    memoryDelta
+            );
         }
     }
 
+
     @Test
-    public void shouldDeleteBatchOfNewTodos() {
-        int[] createdIds = new int[3];
-        for (int i = 0; i < createdIds.length; i++) {
-            JSONObject todo = newUniqueTodo();
-            Response response = given().body(todo.toString()).when().post("/todos");
-            assertEquals(201, response.getStatusCode());
-            createdIds[i] = response.jsonPath().getInt("id");
-        }
-        for (int id : createdIds) {
-            Response response = given().pathParam("id", id).when().delete("/todos/{id}");
-            assertEquals(200, response.getStatusCode());
+    public void shouldDeleteBatchOfNewTodos_withPerformance() {
+        int[] objectCounts = {1, 10, 100, 1000};
+        String csvFile = "src/test/resources/todo_performance_results.csv";
+
+        for (int numObjects : objectCounts) {
+
+            // ---- initial metrics ----
+            long startTime = System.currentTimeMillis();
+            long initialSampleEnd = startTime + 1000; // 1-second sampling before creation/deletion
+
+            double initialCpuUsage =
+                    PerformanceUtils.sampleCpuLoad(startTime, initialSampleEnd);
+            long initialMemoryUsage =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            // ---- create N todos ----
+            int[] createdIds = new int[numObjects];
+            for (int i = 0; i < numObjects; i++) {
+                JSONObject todo = newUniqueTodo();
+                Response response = given()
+                        .body(todo.toString())
+                        .when()
+                        .post("/todos");
+
+                assertEquals(201, response.getStatusCode());
+                createdIds[i] = response.jsonPath().getInt("id");
+            }
+
+            // ---- delete them ----
+            for (int id : createdIds) {
+                Response response = given()
+                        .pathParam("id", id)
+                        .when()
+                        .delete("/todos/{id}");
+
+                assertEquals(200, response.getStatusCode());
+            }
+
+            // ---- final metrics ----
+            long operationEndTime = System.currentTimeMillis();
+            long finalSampleEnd = operationEndTime + 1000; // 1-second sampling after operations
+
+            double finalCpuUsage =
+                    PerformanceUtils.sampleCpuLoad(operationEndTime, finalSampleEnd);
+            long finalMemoryUsage =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            long duration = operationEndTime - startTime;
+            double cpuDelta = Math.max(0, finalCpuUsage - initialCpuUsage);
+            long memoryDelta = Math.max(0, finalMemoryUsage - initialMemoryUsage);
+
+            // ---- log to CSV ----
+            PerformanceUtils.logToCsv(
+                    csvFile,
+                    "deleteTodos",
+                    numObjects,
+                    duration,
+                    cpuDelta,
+                    memoryDelta
+            );
         }
     }
 
