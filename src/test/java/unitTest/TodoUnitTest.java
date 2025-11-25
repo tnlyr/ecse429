@@ -10,6 +10,8 @@ import io.restassured.response.Response;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.Random;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
@@ -36,6 +38,14 @@ public class TodoUnitTest {
 
     @BeforeAll
     public static void bootApi() throws Exception {
+        // Prepare CSV logging file
+        String csvFile = "src/test/resources/todo_performance_results.csv";
+        try (FileWriter writer = new FileWriter(csvFile)) {
+            writer.write("operation,numObjects,duration,cpuUsage,memoryUsage\n"); // Write the header line
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
         // Start the sample API
         try {
             apiProcess = Runtime.getRuntime().exec("java -jar runTodoManagerRestAPI-1.5.5.jar");
@@ -177,9 +187,50 @@ public class TodoUnitTest {
 
     @Test
     public void shouldUpdateTodoViaPost() {
-        JSONObject updatedTodo = newUniqueTodo();
-        Response responsePost = given().body(updatedTodo.toString()).when().post("/todos/" + currentTodoId);
-        assertEquals(200, responsePost.getStatusCode());
+        int[] objectCounts = {1, 200, 400, 600, 800, 1000, 1200};
+        String csvFile = "src/test/resources/todo_performance_results.csv";
+
+        for (int numObjects : objectCounts) {
+            long startTime = System.currentTimeMillis();
+            long initialSampleEnd = startTime + 1000; // 1-second sampling window before the operation
+            double initialCpuUsage =
+                    PerformanceUtils.sampleCpuLoad(startTime, initialSampleEnd);
+            long initialMemoryUsage =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            // Perform the POST updates numObjects times
+            for (int i = 0; i < numObjects; i++) {
+                JSONObject updatedTodo = newUniqueTodo();
+
+                Response responsePost = given()
+                        .body(updatedTodo.toString())
+                        .when()
+                        .post("/todos/" + currentTodoId);
+
+                assertEquals(200, responsePost.getStatusCode());
+            }
+
+            long operationEndTime = System.currentTimeMillis();
+            long finalSampleEnd = operationEndTime + 1000; // sample CPU for 1s after the work
+
+            double finalCpuUsage =
+                    PerformanceUtils.sampleCpuLoad(operationEndTime, finalSampleEnd);
+            long finalMemoryUsage =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            long duration = operationEndTime - startTime;
+            double cpuDelta = Math.max(0, finalCpuUsage - initialCpuUsage);
+            long memoryDelta = Math.max(0, finalMemoryUsage - initialMemoryUsage);
+
+            PerformanceUtils.logToCsv(
+                    csvFile,
+                    "updateTodoPost",
+                    numObjects,
+                    duration,
+                    cpuDelta,
+                    memoryDelta
+            );
+        }
     }
 
     @Test
@@ -299,9 +350,49 @@ public class TodoUnitTest {
     // Captures actual server behavior (reset of some fields)
     @Test
     public void shouldReflectActualPutBehavior_resetsFields() {
-        JSONObject updatedTodo = newUniqueTodo();
-        Response responsePut = given().body(updatedTodo.toString()).when().put("/todos/" + currentTodoId);
-        assertEquals(200, responsePut.getStatusCode());
+        int[] objectCounts = {1, 200, 400, 600, 800, 1000, 1200};
+        String csvFile = "src/test/resources/todo_performance_results.csv";
+
+        for (int numObjects : objectCounts) {
+            long startTime = System.currentTimeMillis();
+            long initialSampleEnd = startTime + 1000; // 1-second sampling window before the operation
+            double initialCpuUsage =
+                    PerformanceUtils.sampleCpuLoad(startTime, initialSampleEnd);
+            long initialMemoryUsage =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            // Perform the POST updates numObjects times
+            for (int i = 0; i < numObjects; i++) {
+                JSONObject updatedTodo = newUniqueTodo();
+                Response responsePost = given()
+                        .body(updatedTodo.toString())
+                        .when()
+                        .put("/todos/" + currentTodoId);
+
+                assertEquals(200, responsePost.getStatusCode());
+            }
+
+            long operationEndTime = System.currentTimeMillis();
+            long finalSampleEnd = operationEndTime + 1000;
+
+            double finalCpuUsage =
+                    PerformanceUtils.sampleCpuLoad(operationEndTime, finalSampleEnd);
+            long finalMemoryUsage =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            long duration = operationEndTime - startTime;
+            double cpuDelta = Math.max(0, finalCpuUsage - initialCpuUsage);
+            long memoryDelta = Math.max(0, finalMemoryUsage - initialMemoryUsage);
+
+            PerformanceUtils.logToCsv(
+                    csvFile,
+                    "updateTodoPut",
+                    numObjects,
+                    duration,
+                    cpuDelta,
+                    memoryDelta
+            );
+        }
     }
 
     // FIXME
