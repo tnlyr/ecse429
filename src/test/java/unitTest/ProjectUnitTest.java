@@ -11,6 +11,8 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.MethodOrderer.Random;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.List;
@@ -32,6 +34,13 @@ public class ProjectUnitTest {
 
     @BeforeAll
     public static void beforeAll_startApiAndVerify() throws Exception {
+        // Prepare CSV logging file
+        String csvFile = "src/test/resources/project_performance_results.csv";
+        try (FileWriter writer = new FileWriter(csvFile)) {
+            writer.write("operation,numObjects,duration,cpuUsage,memoryUsage\n"); // Write the header line
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         // Boot the API under test
         try {
             apiProcess = Runtime.getRuntime().exec("java -jar runTodoManagerRestAPI-1.5.5.jar");
@@ -137,21 +146,58 @@ public class ProjectUnitTest {
     }
 
     @Test
-    public void givenDuplicateNameAndDescription_whenPostTwice_thenBothAreCreatedIndependently() {
-        JSONObject payload = new JSONObject()
-                .put("title", "same title")
-                .put("completed", false)
-                .put("active", false)
-                .put("description", "same description");
+    public void givenMultipleProjects_whenPostRepeatedly() {
+        int[] objectCounts = {1, 200, 400, 600, 800, 1000, 1200};
+        String csvFile = "src/test/resources/project_performance_results.csv";
 
-        Response first = given().body(payload.toString()).when().post("/projects");
-        Response second = given().body(payload.toString()).when().post("/projects");
+        for (int numObjects : objectCounts) {
 
-        assertEquals(201, first.getStatusCode());
-        assertEquals(201, second.getStatusCode());
+            // -------- initial metrics --------
+            long startTime = System.currentTimeMillis();
+            long initialSampleEnd = startTime + 1000; // 1-second sampling before the POST storm
 
-        deleteById(first.jsonPath().getInt("id"));
-        deleteById(second.jsonPath().getInt("id"));
+            double initialCpuUsage =
+                    PerformanceUtils.sampleCpuLoad(startTime, initialSampleEnd);
+            long initialMemoryUsage =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            // -------- perform POST /projects numObjects times --------
+            for (int i = 0; i < numObjects; i++) {
+                // you can also use RandomDataGenerator.generateProject() if you prefer
+                JSONObject project = newUniqueProject();
+
+                Response response = given()
+                        .body(project.toString())
+                        .when()
+                        .post("/projects");
+
+                assertEquals(201, response.getStatusCode());
+                // optional: cleanup here with deleteById(response.jsonPath().getInt("id"));
+            }
+
+            // -------- final metrics --------
+            long operationEndTime = System.currentTimeMillis();
+            long finalSampleEnd = operationEndTime + 1000; // 1-second sampling after operations
+
+            double finalCpuUsage =
+                    PerformanceUtils.sampleCpuLoad(operationEndTime, finalSampleEnd);
+            long finalMemoryUsage =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            long duration = operationEndTime - startTime;
+            double cpuDelta = Math.max(0, finalCpuUsage - initialCpuUsage);
+            long memoryDelta = Math.max(0, finalMemoryUsage - initialMemoryUsage);
+
+            // -------- log result row to CSV --------
+            PerformanceUtils.logToCsv(
+                    csvFile,
+                    "createMultipleProjects",
+                    numObjects,
+                    duration,
+                    cpuDelta,
+                    memoryDelta
+            );
+        }
     }
 
     @Test
@@ -349,10 +395,57 @@ public class ProjectUnitTest {
     // --- Update ----------------------------------------------------------------
 
     @Test
-    public void givenExistingProject_whenPostToId_then200AndUpdated() {
-        JSONObject updated = newUniqueProject();
-        Response resp = given().body(updated.toString()).when().post("/projects/" + projectId);
-        assertEquals(200, resp.getStatusCode());
+    public void givenExistingProject_whenPostToId_then200AndUpdated_withPerformance() {
+        int[] objectCounts = {1, 200, 400, 600, 800, 1000, 1200};
+        String csvFile = "src/test/resources/project_performance_results.csv";
+
+        for (int numObjects : objectCounts) {
+
+            // -------- initial metrics --------
+            long startTime = System.currentTimeMillis();
+            long initialSampleEnd = startTime + 1000; // 1-second sampling window before POSTs
+
+            double initialCpuUsage =
+                    PerformanceUtils.sampleCpuLoad(startTime, initialSampleEnd);
+            long initialMemoryUsage =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            // -------- perform POST updates --------
+            for (int i = 0; i < numObjects; i++) {
+                // use your suite helper for a new project payload
+                JSONObject updatedProject = newUniqueProject();
+
+                Response resp = given()
+                        .body(updatedProject.toString())
+                        .when()
+                        .post("/projects/" + projectId);
+
+                assertEquals(200, resp.getStatusCode());
+            }
+
+            // -------- final metrics --------
+            long operationEndTime = System.currentTimeMillis();
+            long finalSampleEnd = operationEndTime + 1000; // 1-second sampling window after POSTs
+
+            double finalCpuUsage =
+                    PerformanceUtils.sampleCpuLoad(operationEndTime, finalSampleEnd);
+            long finalMemoryUsage =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            long duration = operationEndTime - startTime;
+            double cpuDelta = Math.max(0, finalCpuUsage - initialCpuUsage);
+            long memoryDelta = Math.max(0, finalMemoryUsage - initialMemoryUsage);
+
+            // -------- log to CSV --------
+            PerformanceUtils.logToCsv(
+                    csvFile,
+                    "amendProjectPost",
+                    numObjects,
+                    duration,
+                    cpuDelta,
+                    memoryDelta
+            );
+        }
     }
 
     @Test
@@ -366,10 +459,56 @@ public class ProjectUnitTest {
     }
 
     @Test
-    public void givenExistingProject_whenPutToId_then200AndUpdated() {
-        JSONObject updated = newUniqueProject();
-        Response resp = given().body(updated.toString()).when().put("/projects/" + projectId);
-        assertEquals(200, resp.getStatusCode());
+    public void givenExistingProject_whenPutToId_then200AndUpdated_withPerformance() {
+        int[] objectCounts = {1, 200, 400, 600, 800, 1000, 1200};
+        String csvFile = "src/test/resources/project_performance_results.csv";
+
+        for (int numObjects : objectCounts) {
+
+            // -------- initial metrics --------
+            long startTime = System.currentTimeMillis();
+            long initialSampleEnd = startTime + 1000; // sample before doing work
+
+            double initialCpu =
+                    PerformanceUtils.sampleCpuLoad(startTime, initialSampleEnd);
+            long initialMemory =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            // -------- perform PUT updates --------
+            for (int i = 0; i < numObjects; i++) {
+                JSONObject updated = newUniqueProject();
+
+                Response resp = given()
+                        .body(updated.toString())
+                        .when()
+                        .put("/projects/" + projectId);
+
+                assertEquals(200, resp.getStatusCode());
+            }
+
+            // -------- final metrics --------
+            long operationEndTime = System.currentTimeMillis();
+            long finalSampleEnd = operationEndTime + 1000; // sample after operations
+
+            double finalCpu =
+                    PerformanceUtils.sampleCpuLoad(operationEndTime, finalSampleEnd);
+            long finalMemory =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            long duration = operationEndTime - startTime;
+            double cpuDelta = Math.max(0, finalCpu - initialCpu);
+            long memoryDelta = Math.max(0, finalMemory - initialMemory);
+
+            // -------- write performance entry --------
+            PerformanceUtils.logToCsv(
+                    csvFile,
+                    "updateProjectPut",
+                    numObjects,
+                    duration,
+                    cpuDelta,
+                    memoryDelta
+            );
+        }
     }
 
     @Test
@@ -409,6 +548,71 @@ public class ProjectUnitTest {
         assertEquals(404, resp.getStatusCode());
         assertEquals("[Could not find any instances with projects/" + invalid + "]",
                 resp.jsonPath().getString("errorMessages"));
+    }
+
+    @Test
+    public void givenMultipleProjects_whenDeleteBatch_withPerformance() {
+        int[] objectCounts = {1, 200, 400, 600, 800, 1000, 1200};
+        String csvFile = "src/test/resources/project_performance_results.csv";
+
+        for (int numObjects : objectCounts) {
+
+            // -------- create multiple projects first --------
+            int[] createdIds = new int[numObjects];
+
+            for (int i = 0; i < numObjects; i++) {
+                JSONObject project = newUniqueProject();
+                Response response = given()
+                        .body(project.toString())
+                        .when()
+                        .post("/projects");
+
+                assertEquals(201, response.getStatusCode());
+                createdIds[i] = response.jsonPath().getInt("id");
+            }
+
+            // -------- initial metrics (before deletion burst) --------
+            long startTime = System.currentTimeMillis();
+            long initialSampleEnd = startTime + 1000; // 1-second sampling window
+
+            double initialCpuUsage =
+                    PerformanceUtils.sampleCpuLoad(startTime, initialSampleEnd);
+            long initialMemoryUsage =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            // -------- delete all created projects --------
+            for (int id : createdIds) {
+                Response response = given()
+                        .pathParam("id", id)
+                        .when()
+                        .delete("/projects/{id}");
+
+                assertEquals(200, response.getStatusCode());
+            }
+
+            // -------- final metrics (after deletion burst) --------
+            long operationEndTime = System.currentTimeMillis();
+            long finalSampleEnd = operationEndTime + 1000;
+
+            double finalCpuUsage =
+                    PerformanceUtils.sampleCpuLoad(operationEndTime, finalSampleEnd);
+            long finalMemoryUsage =
+                    PerformanceUtils.getCurrentMemoryUsage();
+
+            long duration = operationEndTime - startTime;
+            double cpuDelta = Math.max(0, finalCpuUsage - initialCpuUsage);
+            long memoryDelta = Math.max(0, finalMemoryUsage - initialMemoryUsage);
+
+            // -------- log row to CSV --------
+            PerformanceUtils.logToCsv(
+                    csvFile,
+                    "deleteMultipleProjects",
+                    numObjects,
+                    duration,
+                    cpuDelta,
+                    memoryDelta
+            );
+        }
     }
 
     // ---------- helpers ----------

@@ -31,6 +31,12 @@ dependencies {
     testImplementation 'org.junit.jupiter:junit-jupiter-params:5.10.2'
     testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
     testImplementation 'org.junit.platform:junit-platform-suite:1.11.0' // Use the latest version
+
+    // Faker library for generating random data
+    implementation 'com.github.javafaker:javafaker:1.0.2'
+
+    // JSON library used by JSONObject
+    implementation 'org.json:json:20240303'
 }
 
 test {

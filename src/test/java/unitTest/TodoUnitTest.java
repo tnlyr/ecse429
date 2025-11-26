@@ -566,7 +566,7 @@ public class TodoUnitTest {
 
     @Test
     public void shouldDeleteBatchOfNewTodos_withPerformance() {
-        int[] objectCounts = {1, 10, 100, 1000};
+        int[] objectCounts = {1, 200, 400, 600, 800, 1000, 1200};
         String csvFile = "src/test/resources/todo_performance_results.csv";
 
         for (int numObjects : objectCounts) {
