@@ -1,5 +1,7 @@
 plugins {
     id 'java'
+    id "org.sonarqube" version "7.0.1.6134"
+    id "jacoco"
 }
 
 group = 'ca.mcgill.ecse42.a1'
@@ -37,6 +39,12 @@ dependencies {
 
     // JSON library used by JSONObject
     implementation 'org.json:json:20240303'
+}
+
+jacocoTestReport {
+    reports {
+        xml.required = true
+    }
 }
 
 test {
