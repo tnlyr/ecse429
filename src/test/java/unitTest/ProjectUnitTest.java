@@ -172,7 +172,6 @@ public class ProjectUnitTest {
                         .post("/projects");
 
                 assertEquals(201, response.getStatusCode());
-                // optional: cleanup here with deleteById(response.jsonPath().getInt("id"));
             }
 
             // -------- final metrics --------
