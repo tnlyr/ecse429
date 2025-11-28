@@ -24,3 +24,14 @@ Ahmed Mossa - 261001739
 [Step Definition Tests Video](https://www.youtube.com/watch?v=NnnDGqZvpy0)
 
 [Report PDF File](https://github.com/tnlyr/ecse429/blob/main/Report_A2.pdf)
+
+## Part C
+
+[Performance Test Suite](https://github.com/tnlyr/ecse429/tree/main/src/test/java/unitTest)
+
+[Performance Test Suite Video](https://youtu.be/hfABUmBhqkY)
+
+[Report PDF File](https://github.com/tnlyr/ecse429/blob/main/Report_A3.pdf)
+
+
+
